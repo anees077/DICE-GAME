@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Game App</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:sans-serif;background:linear-gradient(135deg,#ff9a9e,#fad0c4);min-height:100vh;display:flex;justify-content:center;align-items:center}
+    .page{display:none;width:100%;max-width:400px;background:#fff;border-radius:12px;box-shadow:0 4px 12px rgba(0,0,0,0.15);overflow:hidden}
+    .page.active{display:block}
+    header{background:linear-gradient(45deg,#ff6e7f,#bfe9ff);color:#fff;padding:20px;text-align:center}
+    header h1{margin:0;font-size:1.5rem}
+    .content{padding:20px}
+    .nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:400px;background:#fff;display:flex;justify-content:space-around;border-top:1px solid #ddd}
+    .nav button{flex:1;padding:10px 0;border:none;background:none;font-size:.9rem;cursor:pointer}
+    .nav button.active{color:#ff6e7f;font-weight:bold}
+
+    form{display:flex;flex-direction:column}
+    form input{margin-bottom:12px;padding:10px;border:1px solid #ccc;border-radius:4px}
+    form button{padding:12px;border:none;border-radius:4px;background:#ff5722;color:#fff;font-size:1rem;cursor:pointer}
+    .toggle{text-align:center;margin-top:10px;font-size:.9rem}
+    .toggle span{color:#007BFF;cursor:pointer}
+
+    .wallet{display:flex;justify-content:space-between;margin-bottom:20px;font-size:.9rem}
+    .wallet .controls button{width:48%;padding:8px;margin-top:8px;border:none;border-radius:4px;color:#fff;cursor:pointer}
+    .wallet .controls button.deposit{background:#4caf50}
+    .wallet .controls button.redeem{background:#ff9800}
+
+    .bet label{display:block;margin:10px 0 5px;font-weight:bold}
+    .bet select,.bet input{width:100%;padding:8px;border:1px solid #ccc;border-radius:4px;margin-bottom:12px}
+    .bet button{width:100%;padding:12px;border:none;border-radius:4px;background:#ff5722;color:#fff;font-size:1rem;cursor:pointer}
+
+    .history{max-height:150px;overflow-y:auto;border-top:1px solid #ddd;padding-top:10px;font-size:.9rem}
+    .history h3{margin-bottom:8px}
+    .history div{margin-bottom:6px}
+
+    #bonusPage{position:fixed;top:0;left:0;width:100%;height:100vh;background:linear-gradient(135deg,#f6d365,#fda085);overflow-y:auto;padding-top:60px}
+    .bonus-container{display:flex;flex-direction:column;gap:16px;padding:20px}
+    .bonus-item{padding:16px;background:rgba(255,255,255,0.9);border-radius:12px;display:flex;justify-content:space-between;align-items:center}
+    .bonus-item div{font-weight:bold}
+    .bonus-item button{padding:8px 16px;border:none;border-radius:8px;background:#ff6e7f;color:#fff;font-weight:bold;cursor:pointer}
+    .bonus-item button.claimed{background:#aaa;cursor:default}
+
+    #giftsPage{background:linear-gradient(135deg,#a1c4fd,#c2e9fb);color:#333}
+    .gift-container{display:flex;flex-direction:column;gap:12px}
+    .gift-container input{padding:10px;border:1px solid #ccc;border-radius:4px}
+    .gift-container button{padding:12px;border:none;border-radius:4px;background:#4caf50;color:#fff;cursor:pointer}
+
+    #accountPage .profile{display:flex;align-items:center;margin-bottom:20px}
+    #accountPage .avatar{width:50px;height:50px;border-radius:50%;background:#ff6e7f;color:#fff;display:flex;align-items:center;justify-content:center;font-size:1.5rem;margin-right:15px}
+    #accountPage .userinfo p{margin-bottom:6px;font-weight:bold}
+    #accountPage .userinfo .uid{font-size:.9rem;color:#666}
+    .action-buttons{display:flex;gap:10px;margin-bottom:20px}
+    .action-buttons button{flex:1;padding:10px;border:none;border-radius:4px;color:#fff;font-weight:bold;cursor:pointer}
+    .action-buttons .deposit{background:#4caf50}
+    .action-buttons .redeem{background:#ff9800}
+
+    .history-tabs{display:flex;gap:10px;margin-bottom:20px}
+    .history-tabs div{flex:1;padding:10px;background:#f0f0f0;text-align:center;border-radius:4px;cursor:pointer}
+
+    .contact-links{display:flex;gap:10px;margin-bottom:20px}
+    .contact-links a{flex:1;padding:10px;text-align:center;border-radius:4px;color:#fff;text-decoration:none;font-weight:bold}
+    .contact-links .telegram{background:#0088cc}
+    .contact-links .whatsapp{background:#25d366}
+
+    .logout-button{width:100%;padding:12px;border:none;border-radius:4px;background:#f44336;color:#fff;font-size:1rem;cursor:pointer}
+
+    .sub-page{position:fixed;top:0;left:0;width:100%;height:100vh;background:#fff;overflow-y:auto;display:none}
+    .sub-header{display:flex;align-items:center;padding:10px;background:#ff6e7f;color:#fff}
+    .sub-header span{cursor:pointer;font-size:1.2rem;margin-right:10px}
+    .sub-content{padding:20px;font-size:1rem}
+    .sub-content a{color:#007BFF;text-decoration:underline}
+  </style>
+</head>
+<body>
+  <!-- Register -->
+  <div id="registerPage" class="page">
+    <header><h1>Register</h1></header>
+    <div class="content">
+      <form id="registerForm">
+        <input id="regPhone" placeholder="Phone number" required/>
+        <input id="regName" placeholder="Name" required/>
+        <input id="regPass" type="password" placeholder="Password" required/>
+        <input id="regPass2" type="password" placeholder="Re-enter password" required/>
+        <button>Register</button>
+      </form>
+      <div class="toggle">Already have an account? <span id="toLogin">Login</span></div>
+    </div>
+  </div>
+
+  <!-- Login -->
+  <div id="loginPage" class="page">
+    <header><h1>Login</h1></header>
+    <div class="content">
+      <form id="loginForm">
+        <input id="logPhone" placeholder="Phone number" required/>
+        <input id="logPass" type="password" placeholder="Password" required/>
+        <button>Login</button>
+      </form>
+      <div class="toggle">No account? <span id="toRegister">Register</span></div>
+    </div>
+  </div>
+
+  <!-- Home -->
+  <div id="homePage" class="page">
+    <header><h1>🎲 Dice Bet</h1></header>
+    <div class="content">
+      <div class="wallet">
+        <div>Balance: <strong id="balance">0</strong></div>
+        <div class="controls">
+          <button id="btnDeposit" class="deposit">Deposit</button>
+          <button id="btnWithdraw" class="redeem">Redeem</button>
+        </div>
+      </div>
+      <div class="bet">
+        <label>Choose your number (1–6):</label>
+        <select id="choice"><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option></select>
+        <label>Your stake (coins):</label>
+        <input id="stake" type="number" min="1" placeholder="Enter stake"/>
+        <button id="btnRoll">Roll & Bet</button>
+      </div>
+      <div class="history">
+        <h3>History</h3>
+        <div id="historyList">— no bets yet —</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bonus -->
+  <div id="bonusPage" class="page">
+    <header><h1>Bonus Offers</h1></header>
+    <div class="bonus-container" id="bonusList"></div>
+  </div>
+
+  <!-- Gifts -->
+  <div id="giftsPage" class="page">
+    <header><h1>Gifts</h1></header>
+    <div class="content">
+      <div class="gift-container">
+        <input id="giftCodeInput" placeholder="Enter gift code"/>
+        <button id="btnClaimGift">Claim Gift</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Account -->
+  <div id="accountPage" class="page">
+    <header><h1>Account</h1></header>
+    <div class="content">
+      <div class="profile">
+        <div id="avatar" class="avatar">A</div>
+        <div class="userinfo">
+          <p id="userName">Name</p>
+          <p id="userPhone">Phone</p>
+          <p class="uid" id="userUID">UID: 123456</p>
+        </div>
+      </div>
+      <div class="action-buttons">
+        <button class="deposit">Deposit</button>
+        <button class="redeem">Redeem</button>
+      </div>
+      <div class="history-tabs">
+        <div id="tabDepHist">Deposit History</div>
+        <div id="tabRedHist">Redeem History</div>
+        <div id="tabBetHist">Bet History</div>
+      </div>
+      <div class="contact-links">
+        <a href="https://t.me/dicegamemanager" class="telegram" target="_blank">Telegram</a>
+        <a href="https://whatsapp.com/channel/0029VbAWzqY8V0tx2ZZBZX3I" class="whatsapp" target="_blank">WhatsApp</a>
+      </div>
+      <button id="btnLogout" class="logout-button">Logout</button>
+    </div>
+  </div>
+
+  <!-- Navigation -->
+  <div id="nav" class="nav">
+    <button data-target="homePage" class="active">Home</button>
+    <button data-target="bonusPage">Bonus</button>
+    <button data-target="giftsPage">Gifts</button>
+    <button data-target="accountPage">Account</button>
+  </div>
+
+  <!-- Sub-page -->
+  <div id="subPage" class="sub-page">
+    <div class="sub-header"><span id="subBack">←</span><h1 id="subTitle"></h1></div>
+    <div class="sub-content" id="subContent"></div>
+  </div>
+
+  <script>
+    let users = JSON.parse(localStorage.getItem('users'))||[];
+    let currentUser = localStorage.getItem('currentUser');
+    let giftCodes = JSON.parse(localStorage.getItem('giftCodes'))||[];
+    const bonusOffers=[{deposit:100,bonus:18},{deposit:200,bonus:28},{deposit:500,bonus:58},{deposit:1000,bonus:108},{deposit:2000,bonus:208}];
+    const pages=['registerPage','loginPage','homePage','bonusPage','giftsPage','accountPage'];
+    const nav=document.getElementById('nav'), subPage=document.getElementById('subPage');
+
+    function saveAll(){localStorage.setItem('users',JSON.stringify(users));}
+    function saveState(){localStorage.setItem('currentUser',currentUser);}
+    function saveGiftCodes(){localStorage.setItem('giftCodes',JSON.stringify(giftCodes));}
+    function loadUser(){return users.find(u=>u.phone===currentUser);}
+    function showPage(id){
+      document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+      nav.style.display='flex';
+      document.querySelectorAll('.nav button')
+        .forEach(b=>b.classList.toggle('active',b.dataset.target===id));
+      if(id==='bonusPage') renderBonuses();
+    }
+
+    document.getElementById('toLogin').onclick=()=>showPage('loginPage');
+    document.getElementById('toRegister').onclick=()=>showPage('registerPage');
+
+    document.getElementById('registerForm').onsubmit=e=>{
+      e.preventDefault();
+      const phone=regPhone.value.trim(),name=regName.value.trim();
+      const pass=regPass.value,pass2=regPass2.value;
+      if(pass!==pass2) return alert('Passwords do not match');
+      let u=users.find(u=>u.phone===phone);
+      if(u){ if(u.password===pass){currentUser=phone;saveState();initApp();} else alert('Number registered with different password'); return; }
+      users.push({phone,name,password:pass,balance:0,history:[],totalDeposit:0,claimedBonuses:[],claimedGifts:[]});
+      saveAll();currentUser=phone;saveState();initApp();
+    };
+
+    document.getElementById('loginForm').onsubmit=e=>{
+      e.preventDefault();
+      const phone=logPhone.value.trim(),pass=logPass.value;
+      let u=users.find(u=>u.phone===phone&&u.password===pass);
+      if(!u) return alert('User not found');
+      currentUser=phone;saveState();initApp();
+    };
+
+    document.querySelectorAll('.nav button').forEach(b=>b.onclick=()=>showPage(b.dataset.target));
+    document.getElementById('btnLogout').onclick=()=>{localStorage.removeItem('currentUser');location.reload();};
+
+    const balanceEl=document.getElementById('balance'),historyEl=document.getElementById('historyList');
+
+    document.querySelectorAll('#btnDeposit, #accountPage .deposit').forEach(btn=>
+      btn.onclick=()=>openSub('Deposit','<div style="font-size:1.1rem;">DEAR USER FOR DEPOSIT CONTACT OUR MANAGER ❤️‍🩹<br><a href="https://t.me/dicegamemanager" target="_blank">t.me/dicegamemanager</a><br><a href="https://whatsapp.com/channel/0029VbAWzqY8V0tx2ZZBZX3I" target="_blank">whatsapp.com/…</a></div>')
+    );
+    document.querySelectorAll('#btnWithdraw, #accountPage .redeem').forEach(btn=>
+      btn.onclick=()=>openSub('Redeem','<form id="redeemForm"><label>UPI ID</label><input id="upiInput" required/><label>Amount</label><input type="number" id="amtInput" required/><button>Submit</button></form>')
+    );
+
+    document.getElementById('tabDepHist').onclick=()=>openSub('Deposit History',
+      loadUser().history.filter(h=>h.choice==='Deposit').map(h=>`${h.time} → ₹${h.stake}`).join('<br>')
+    );
+    document.getElementById('tabRedHist').onclick=()=>openSub('Redeem History',
+      loadUser().history.filter(h=>h.choice==='Redeem').map(h=>`${h.time} → ₹${h.stake}`).join('<br>')
+    );
+    document.getElementById('tabBetHist').onclick=()=>openSub('Bet History',
+      loadUser().history.filter(h=>h.choice==='Win'||h.choice==='Loss')
+        .map(h=>`${h.time} → Bet ₹${h.stake} → ${h.choice}`).join('<br>')
+    );
+
+    btnRoll.onclick=()=>{
+      let u=loadUser(),s=parseInt(stake.value);
+      if(!s||s<1) return alert('Enter a valid stake');
+      if(s>u.balance) return alert('Not enough coins');
+      let win=Math.random()<0.05;
+      let delta= win? s*2 : -s;
+      u.balance+=delta;
+      let result=win?`Win +${delta}`:`Lose -${s}`;
+      u.history.push({time:new Date().toLocaleTimeString(),choice:win?'Win':'Loss',stake:s,roll:'-',result,balance:u.balance});
+      saveAll();renderGame();
+    };
+
+    function renderGame(){
+      let u=loadUser();
+      balanceEl.textContent=u.balance;
+      historyEl.innerHTML=u.history.length?
+        u.history.slice().reverse().map(e=>
+          `<div>${e.time}|${e.choice} ₹${e.stake}→<strong>${e.result}</strong>|Bal:${e.balance}</div>`
+        ).join(''):'— no bets yet —';
+    }
+
+    function renderBonuses(){
+      let u=loadUser(),c=document.getElementById('bonusList');c.innerHTML='';
+      bonusOffers.forEach(o=>{
+        let d=document.createElement('div');d.className='bonus-item';
+        let disp=o.deposit>=1000?(o.deposit/1000)+'K':o.deposit;
+        let l=document.createElement('div');l.innerText=`DEPOSIT ${disp} RS → BONUS ${o.bonus} RS`;
+        let b=document.createElement('button');
+        if(u.claimedBonuses.includes(o.deposit)){
+          b.innerText='CLAIMED';b.classList.add('claimed');
+        } else {
+          b.innerText='CLAIM';b.onclick=()=>{
+            if(u.totalDeposit>=o.deposit){
+              u.balance+=o.bonus;u.claimedBonuses.push(o.deposit);
+              u.history.push({time:new Date().toLocaleTimeString(),choice:'Bonus',stake:o.bonus,roll:'-',result:'+'+o.bonus,balance:u.balance});
+              saveAll();renderGame();renderBonuses();alert(`Claimed ₹${o.bonus}!`);
+            } else alert(`Deposit ₹${o.deposit} to claim.`);
+          };
+        }
+        d.append(l,b);c.append(d);
+      });
+    }
+
+    btnClaimGift.onclick=()=>{
+      let code=giftCodeInput.value.trim(),u=loadUser();
+      if(!code)return;
+      if(u.claimedGifts.includes(code)){alert('Already received.');return;}
+      if(giftCodes.includes(code)){
+        u.balance+=10;u.claimedGifts.push(code);
+        u.history.push({time:new Date().toLocaleTimeString(),choice:'Gift',stake:10,roll:'-',result:'+10',balance:u.balance});
+        saveAll();renderGame();alert('Gift applied! +₹10');
+      } else alert('Wrong code.');
+    };
+
+    function openSub(title,content){
+      document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+      nav.style.display='none';subPage.style.display='block';
+      document.getElementById('subTitle').innerText=title;
+      document.getElementById('subContent').innerHTML=content;
+      if(title==='Redeem'){
+        document.getElementById('redeemForm').onsubmit=e=>{
+          e.preventDefault();
+          let u=loadUser(),amt=parseInt(amtInput.value);
+          if(amt<120) return alert('Minimum redeem is ₹120');
+          if(amt>u.balance) return alert('Cannot redeem more than balance.');
+          u.balance-=amt;
+          u.history.push({time:new Date().toLocaleTimeString(),choice:'Redeem',stake:amt,roll:'-',result:'-'+amt,balance:u.balance});
+          saveAll();renderGame();
+          alert('Redeemed—arrives in 72h');
+          subPage.style.display='none';showPage('accountPage');
+        };
+      }
+    }
+    document.getElementById('subBack').onclick=()=>{
+      subPage.style.display='none';showPage('accountPage');
+    };
+
+    function populateAccount(){
+      let u=loadUser();
+      document.getElementById('avatar').innerText=u.name.charAt(0).toUpperCase();
+      document.getElementById('userName').innerText=u.name;
+      document.getElementById('userPhone').innerText=u.phone;
+      if(!u.uid){u.uid=Math.floor(100000+Math.random()*900000);saveAll();}
+      document.getElementById('userUID').innerText='UID: '+u.uid;
+    }
+
+    function initApp(){showPage('homePage');renderGame();populateAccount();}
+
+    if(currentUser) initApp(); else showPage('registerPage');
+  </script>
+</body>
+</html>

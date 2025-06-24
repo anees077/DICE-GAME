@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Admin Panel</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: sans-serif; background: #f5f5f5; padding: 20px; }
+    .container { max-width: 800px; margin: auto; background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+    h1 { margin-bottom: 20px; }
+    .search-bar { display: flex; gap: 10px; margin-bottom: 20px; }
+    .search-bar input { flex: 1; padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
+    .search-bar button { padding: 8px 16px; border: none; border-radius: 4px; background: #007bff; color: #fff; cursor: pointer; }
+    table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+    table th, table td { padding: 8px; border: 1px solid #ddd; text-align: left; }
+    .actions button { margin-right: 6px; padding: 4px 8px; border: none; border-radius: 4px; cursor: pointer; }
+    .actions .add    { background: #28a745; color: #fff; }
+    .actions .remove { background: #dc3545; color: #fff; }
+    .actions .block  { background: #ffc107; color: #000; }
+    .actions .unblock{ background: #17a2b8; color: #fff; }
+    .gift-section { margin-top: 30px; }
+    .gift-section input  { padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: calc(100% - 100px); }
+    .gift-section button { padding: 8px 16px; border: none; border-radius: 4px; background: #6f42c1; color: #fff; cursor: pointer; }
+    .gift-list { margin-top: 10px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Admin Panel</h1>
+    <div class="search-bar">
+      <input type="text" id="searchInput" placeholder="Search by UID or Phone number">
+      <button id="btnSearch">Search User</button>
+    </div>
+
+    <table id="userTable">
+      <thead>
+        <tr><th>UID</th><th>Name</th><th>Phone</th><th>Balance</th><th>Status</th><th>Actions</th></tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+
+    <div class="gift-section">
+      <h2>Generate Gift Code</h2>
+      <input type="number" id="giftLength" placeholder="Code length (e.g. 12)" min="4">
+      <button id="btnGenerateGift">Generate</button>
+      <div class="gift-list" id="giftList"></div>
+    </div>
+  </div>
+
+  <script>
+    let users = JSON.parse(localStorage.getItem('users'))||[];
+    let giftCodes = JSON.parse(localStorage.getItem('giftCodes'))||[];
+
+    const tbody = document.querySelector('#userTable tbody');
+    const renderUser = u => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${u.uid}</td>
+        <td>${u.name}</td>
+        <td>${u.phone}</td>
+        <td>${u.balance}</td>
+        <td>${u.blocked ? 'Blocked' : 'Active'}</td>
+        <td class="actions">
+          <button class="add">+Coins</button>
+          <button class="remove">-Coins</button>
+          ${u.blocked 
+            ? '<button class="unblock">Unblock</button>' 
+            : '<button class="block">Block</button>'}
+        </td>`;
+      tr.querySelector('.add').onclick = () => {
+        const a = parseInt(prompt('Amount to add?'));
+        if (a>0) { u.balance += a; saveAndRefresh(); }
+      };
+      tr.querySelector('.remove').onclick = () => {
+        const a = parseInt(prompt('Amount to remove?'));
+        if (a>0 && a<=u.balance) { u.balance -= a; saveAndRefresh(); }
+      };
+      tr.querySelector(u.blocked?'.unblock':'.block').onclick = () => {
+        u.blocked = !u.blocked; saveAndRefresh();
+      };
+      return tr;
+    };
+
+    function saveAndRefresh(){
+      localStorage.setItem('users', JSON.stringify(users));
+      searchUser();
+    }
+
+    function searchUser(){
+      const q = document.getElementById('searchInput').value.trim();
+      tbody.innerHTML = '';
+      if (!q) return;
+      users.filter(u=>u.phone===q||u.uid.toString()===q)
+           .forEach(u=>tbody.append(renderUser(u)));
+    }
+    document.getElementById('btnSearch').onclick = searchUser;
+
+    // Gift codes
+    const giftList = document.getElementById('giftList');
+    document.getElementById('btnGenerateGift').onclick = () => {
+      let len = parseInt(document.getElementById('giftLength').value) || 12;
+      let code = Array.from({length:len}, ()=>Math.random().toString(36)[2].toUpperCase()).join('');
+      giftCodes.push(code);
+      localStorage.setItem('giftCodes', JSON.stringify(giftCodes));
+      renderGifts();
+    };
+    function renderGifts(){
+      giftList.innerHTML = giftCodes.map(c=>`<div>${c}</div>`).join('');
+    }
+    renderGifts();
+  </script>
+</body>
+</html>
